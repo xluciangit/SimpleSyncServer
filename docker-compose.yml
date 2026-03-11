@@ -1,0 +1,14 @@
+services:
+  simple-sync-server:
+    image: xlucian1007/simple-sync-server:latest
+    container_name: simple-sync-server
+    ports:
+      - "3000:3000"
+    volumes:
+      - /your/path/data:/data
+      - /your/path/config:/config
+    environment:
+      - PORT=3000
+      - DATA_DIR=/data
+      - CONFIG_DIR=/config
+    restart: unless-stopped
