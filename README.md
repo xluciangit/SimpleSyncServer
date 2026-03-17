@@ -25,24 +25,30 @@ Self-hosted file sync server for the [SimpleSync Companion](https://github.com/x
 
 ---
 
+## What changed in 1.2.1
+
+- API rate limit raised from 1,000 to 5,000 requests per 15 minutes — fixes IP blocks when uploading large folders on fast connections
+
+---
 ## What changed in 1.2.0
 
-The whole UI was redone — sidebar navigation, new icons, updated dark/light theme colours.
+The whole UI was redone — sidebar navigation, new icons, updated dark/light theme colours. Your theme choice now sticks across logout so the login page doesn't reset to dark every time.
 
 Under the hood: API keys are now stored as SHA-256 hashes instead of plain text. Nothing breaks when updating from previous version — existing keys keep working.
 
 Other additions:
 - Account lockout after 10 failed login attempts (30 min), plus a global cap to slow down bots
 - Security events log in the admin panel — logins, failures, lockouts, blocks
-- Integrity check — scans file records against disk and removes entries for files that are gone. The Android app checks the integrity at each scan cycle.
+- Integrity check — scans file records against disk and removes entries for files that are gone. The Android app gets notified and rescans
 - Switching date format now renames existing date folders on disk and in the DB automatically
 - Dashboard shows free / used / total disk space
 - HTML output is fully escaped — folder names and usernames with special characters render safely
-- Server code split into modules: `lib/`, `routes/`, `views/`
+- Server split into modules: `lib/`, `routes/`, `views/`
 
-New API endpoints for the Android app: `/api/integrity-status`, `/api/integrity-acknowledge`, `/api/folders/validate`.
+New API endpoints: `/api/integrity-status`, `/api/integrity-acknowledge`, `/api/folders/validate`
 
 ---
+
 
 ## Features
 
@@ -69,7 +75,7 @@ docker run -d \
   -v /your/path/data:/data \
   -v /your/path/config:/config \
   --restart unless-stopped \
-  xlucian1007/simplesync-server:1.2.0
+  xlucian1007/simplesync-server:1.2.1
 ```
 
 Or with Compose:
@@ -77,7 +83,7 @@ Or with Compose:
 ```yaml
 services:
   simplesync-server:
-    image: xlucian1007/simplesync-server:1.2.0
+    image: xlucian1007/simplesync-server:1.2.1
     container_name: simplesync-server
     ports:
       - "3000:3000"
