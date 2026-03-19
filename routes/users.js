@@ -33,7 +33,7 @@ app.post('/users/unblock', requireAdmin, csrfProtection, (req, res) => {
     const theme = req.session.theme || 'dark';
     
     const users = () => db.prepare('SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC').all();
-    const blocked = () => db.prepare('SELECT ip, blocked_at, reason FROM blocked_ips ORDER BY blocked_at DESC').all();
+    const blocked = () => db.prepare('SELECT ip, blocked_at, reason, country, city FROM blocked_ips ORDER BY blocked_at DESC').all();
     const secEvts = () => db.prepare('SELECT ip, event, created_at FROM security_events ORDER BY created_at DESC LIMIT 100').all();
     
     if (!ip) {
@@ -68,7 +68,7 @@ app.post('/users/unblock', requireAdmin, csrfProtection, (req, res) => {
 
 app.get('/users', requireAdmin, csrfProtection, (req, res) => {
     const users = db.prepare('SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC').all();
-    const blocked = db.prepare('SELECT ip, blocked_at, reason FROM blocked_ips ORDER BY blocked_at DESC').all();
+    const blocked = db.prepare('SELECT ip, blocked_at, reason, country, city FROM blocked_ips ORDER BY blocked_at DESC').all();
     const secEvents = db.prepare('SELECT ip, event, created_at FROM security_events ORDER BY created_at DESC LIMIT 100').all();
     const theme = req.session.theme || 'dark';
     
@@ -91,7 +91,7 @@ app.post('/users/create', requireAdmin, csrfProtection, (req, res) => {
     const theme = req.session.theme || 'dark';
     
     const users = () => db.prepare('SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC').all();
-    const blocked = () => db.prepare('SELECT ip, blocked_at, reason FROM blocked_ips ORDER BY blocked_at DESC').all();
+    const blocked = () => db.prepare('SELECT ip, blocked_at, reason, country, city FROM blocked_ips ORDER BY blocked_at DESC').all();
     const secEvts = () => db.prepare('SELECT ip, event, created_at FROM security_events ORDER BY created_at DESC LIMIT 100').all();
     
     if (!username || !safeName(username)) {
@@ -176,7 +176,7 @@ app.post('/users/delete', requireAdmin, csrfProtection, (req, res) => {
     const theme = req.session.theme || 'dark';
     
     const users = () => db.prepare('SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC').all();
-    const blocked = () => db.prepare('SELECT ip, blocked_at, reason FROM blocked_ips ORDER BY blocked_at DESC').all();
+    const blocked = () => db.prepare('SELECT ip, blocked_at, reason, country, city FROM blocked_ips ORDER BY blocked_at DESC').all();
     const secEvts = () => db.prepare('SELECT ip, event, created_at FROM security_events ORDER BY created_at DESC LIMIT 100').all();
     
     if (!user_id) {
@@ -268,7 +268,7 @@ app.post('/users/change-password', requireAdmin, csrfProtection, (req, res) => {
     const theme = req.session.theme || 'dark';
     
     const users = () => db.prepare('SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC').all();
-    const blocked = () => db.prepare('SELECT ip, blocked_at, reason FROM blocked_ips ORDER BY blocked_at DESC').all();
+    const blocked = () => db.prepare('SELECT ip, blocked_at, reason, country, city FROM blocked_ips ORDER BY blocked_at DESC').all();
     const secEvts = () => db.prepare('SELECT ip, event, created_at FROM security_events ORDER BY created_at DESC LIMIT 100').all();
     
     const target = db.prepare('SELECT id, username FROM users WHERE id = ?').get(parseInt(user_id));
@@ -346,7 +346,7 @@ app.post('/settings/integrity-check', requireSession, csrfProtection, (req, res)
 app.post('/users/integrity-check', requireAdmin, csrfProtection, (req, res) => {
     if (dbLib.activeUploads > 0) {
         const users = db.prepare('SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC').all();
-        const blocked = db.prepare('SELECT ip, blocked_at, reason FROM blocked_ips ORDER BY blocked_at DESC').all();
+        const blocked = db.prepare('SELECT ip, blocked_at, reason, country, city FROM blocked_ips ORDER BY blocked_at DESC').all();
         const secEvents = db.prepare('SELECT ip, event, created_at FROM security_events ORDER BY created_at DESC LIMIT 100').all();
         return res.send(renderUsersPage({ users, blocked, secEvents, theme: req.session.theme || 'dark', error: 'Integrity check skipped — an upload is in progress. Please try again once uploads have finished.', success: null, csrfToken: req.csrfToken(), nonce: res.locals.cspNonce }));
     }
@@ -368,7 +368,7 @@ app.post('/users/integrity-check', requireAdmin, csrfProtection, (req, res) => {
         : `Integrity check complete. All ${totalChecked} file records across ${allUsers.length} user${allUsers.length === 1 ? '' : 's'} are valid.`;
     
     const users = db.prepare('SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC').all();
-    const blocked = db.prepare('SELECT ip, blocked_at, reason FROM blocked_ips ORDER BY blocked_at DESC').all();
+    const blocked = db.prepare('SELECT ip, blocked_at, reason, country, city FROM blocked_ips ORDER BY blocked_at DESC').all();
     const secEvents = db.prepare('SELECT ip, event, created_at FROM security_events ORDER BY created_at DESC LIMIT 100').all();
     const theme = req.session.theme || 'dark';
     

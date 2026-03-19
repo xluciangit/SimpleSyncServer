@@ -289,7 +289,7 @@ ${navSidebar('dash', csrfToken, theme, false)}
   <div class="page-hdr">
     <span class="page-title">Dashboard</span>
     <div class="hdr-meta">
-      <span class="badge">v1.2.2</span>
+      <span class="badge">v1.2.3</span>
       <span class="badge"><img src="/static/stopwatch.png" style="width:13px;height:13px;object-fit:contain;vertical-align:middle;margin-right:3px" alt=""> ${uptime}</span>
       <span>${escapeHtml(username)}</span>
     </div>
@@ -421,7 +421,7 @@ ${navSidebar('settings', csrfToken, theme, isAdmin)}
   <div class="page-hdr">
     <span class="page-title">Settings</span>
     <div class="hdr-meta">
-      <span class="badge">v1.2.2</span>
+      <span class="badge">v1.2.3</span>
       ${uptime ? `<span class="badge"><img src="/static/stopwatch.png" style="width:13px;height:13px;object-fit:contain;vertical-align:middle;margin-right:3px" alt=""> ${uptime}</span>` : ''}
       <span>${escapeHtml(username)}</span>
     </div>
@@ -609,7 +609,7 @@ ${navSidebar('users', csrfToken, theme, true)}
   <div class="page-hdr">
     <span class="page-title">User Management</span>
     <div class="hdr-meta">
-      <span class="badge">v1.2.2</span>
+      <span class="badge">v1.2.3</span>
       ${uptime ? `<span class="badge"><img src="/static/stopwatch.png" style="width:13px;height:13px;object-fit:contain;vertical-align:middle;margin-right:3px" alt=""> ${uptime}</span>` : ''}
       <span class="badge" style="color:var(--accent)">Admin</span>
     </div>
@@ -684,6 +684,7 @@ ${navSidebar('users', csrfToken, theme, true)}
           <div class="folder-hdr" style="cursor:default">
             <span style="color:var(--red);font-size:.85rem">✕</span>
             <span style="font-weight:600;font-family:monospace;flex:1">${escapeHtml(b.ip)}</span>
+            ${b.country ? `<span style="color:var(--muted);font-size:.8rem;margin-right:12px">${escapeHtml(b.city || '—')}, ${escapeHtml(b.country)}</span>` : ''}
             <span style="color:var(--muted);font-size:.8rem;margin-right:12px">Blocked ${b.blocked_at.split(' ')[0]}</span>
             <form method="POST" action="/users/unblock" style="display:inline">
               <input type="hidden" name="_csrf" value="${csrfToken}">

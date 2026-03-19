@@ -25,38 +25,6 @@ Self-hosted file sync server for the [SimpleSync Companion](https://github.com/x
 
 ---
 
-## What changed in 1.2.2
-
-- Upload size limit setting added — admins can set a per-file limit (in GB) from the Settings page
-- Default is unlimited
-- Limit is applied without requiring a server restart
----
-
-## What changed in 1.2.1
-
-- API rate limit raised from 1,000 to 5,000 requests per 15 minutes — fixes IP blocks when uploading large folders on fast connections
-
----
-## What changed in 1.2.0
-
-The whole UI was redone — sidebar navigation, new icons, updated dark/light theme colours. Your theme choice now sticks across logout so the login page doesn't reset to dark every time.
-
-Under the hood: API keys are now stored as SHA-256 hashes instead of plain text. Nothing breaks when updating from previous version — existing keys keep working.
-
-Other additions:
-- Account lockout after 10 failed login attempts (30 min), plus a global cap to slow down bots
-- Security events log in the admin panel — logins, failures, lockouts, blocks
-- Integrity check — scans file records against disk and removes entries for files that are gone. The Android app gets notified and rescans
-- Switching date format now renames existing date folders on disk and in the DB automatically
-- Dashboard shows free / used / total disk space
-- HTML output is fully escaped — folder names and usernames with special characters render safely
-- Server split into modules: `lib/`, `routes/`, `views/`
-
-New API endpoints: `/api/integrity-status`, `/api/integrity-acknowledge`, `/api/folders/validate`
-
----
-
-
 ## Features
 
 - Dashboard with folder file counts, sizes per date, and disk usage
@@ -65,7 +33,6 @@ New API endpoints: `/api/integrity-status`, `/api/integrity-acknowledge`, `/api/
 - Files stored at `/data/{username}/{folder}/{date}/`
 - Date format is per-user (DD.MM.YYYY or MM.DD.YYYY) and can be changed at any time
 - Dark / light theme
-- Files up to 20 GB — a Direct Upload URL bypasses Cloudflare's 100 MB tunnel cap for large files
 - Integrity check for users and admin
 - Login rate limiting, account lockout, permanent IP block for repeat offenders
 - Security events log

@@ -10,7 +10,7 @@ const { apiLimiter, apiAuth } = require('../lib/security');
 module.exports = function(app, upload) {
 
 app.get('/api/ping', (req, res) => {
-    res.json({ ok: true, version: '1.2.2', app: 'SimpleSync Server' });
+    res.json({ ok: true, version: '1.2.3', app: 'SimpleSync Server' });
 });
 
 app.get('/health', (req, res) => {

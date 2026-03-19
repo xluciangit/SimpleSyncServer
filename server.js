@@ -173,7 +173,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
     const border = '='.repeat(46);
     console.log(`╔${border}╗`);
-    console.log(`║          SimpleSync Server v1.2.2             ║`);
+    console.log(`║          SimpleSync Server v1.2.3             ║`);
     console.log(`╚${border}╝`);
     console.log(`  Port:    ${PORT} (host: ${HOST_PORT})`);
     console.log(`  Data:    ${dbLib.DATA_DIR}`);
