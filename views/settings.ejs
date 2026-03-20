@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="<%= theme %>">
+<head>
+  <title>Settings – SimpleSync Server</title>
+  <%- include('partials/_head') %>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/_nav', { active: 'settings', isAdmin: isAdmin }) %>
+
+  <div class="content-col">
+    <div class="page-hdr">
+      <span class="page-title">Settings</span>
+      <div class="hdr-meta">
+        <span class="badge">v<%= VERSION %></span>
+        <% if (uptime) { %>
+          <span class="badge">
+            <img src="/static/stopwatch.png" style="width:13px;height:13px;object-fit:contain;vertical-align:middle;margin-right:3px" alt="">
+            <%= uptime %>
+          </span>
+        <% } %>
+        <span><%= username %></span>
+      </div>
+    </div>
+
+    <div class="content-panel">
+    <div class="wrap-narrow">
+      <% if (error) { %><div class="err"><%= error %></div><% } %>
+      <% if (success) { %><div class="ok">✓ <%= success %></div><% } %>
+
+      <div class="card section">
+        <h3>Account</h3>
+        <div class="form-group">
+          <label>Username</label>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--muted);font-size:.9rem"><%= username %></div>
+        </div>
+      </div>
+
+      <div class="card section">
+        <h3>Change Password</h3>
+        <form method="POST" action="/settings/password">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-group"><label>Current Password</label><input type="password" name="current_password"></div>
+          <div class="form-group"><label>New Password</label><input type="password" name="new_password"></div>
+          <div class="form-group"><label>Confirm New Password</label><input type="password" name="confirm_password"></div>
+          <button class="btn btn-primary btn-sm" type="submit">Change Password</button>
+        </form>
+      </div>
+
+      <% if (isAdmin) { %>
+      <div class="card section">
+        <h3>User Management</h3>
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px">Create and manage user accounts, view security events and blocked IPs.</p>
+        <a href="/users" class="btn btn-primary btn-sm">Open User Management</a>
+      </div>
+      <% } %>
+
+      <% if (!isAdmin) { %>
+      <div class="card section">
+        <h3>API Key</h3>
+        <% if (apiKey) { %>
+          <div class="ok" style="margin-bottom:12px">✓ Copy this key into the Android app now — it won't be shown again after you leave this page.</div>
+          <div class="key-row">
+            <span id="kv" style="font-family:monospace;font-size:.83rem;color:var(--accent2);flex:1;min-width:0;overflow-wrap:break-word;word-break:break-all"><%= apiKey %></span>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="copyKey()">Copy</button>
+          </div>
+        <% } else { %>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px">Key is stored as a hash and can't be shown again. Regenerate to get a new key.</p>
+        <% } %>
+        <button type="button" class="btn btn-red btn-sm" style="margin-top:10px" onclick="showRegenModal()">Regenerate Key</button>
+
+        <div id="regenModal" class="modal-overlay">
+          <div class="modal-box">
+            <div class="modal-title">Regenerate API Key?</div>
+            <p style="color:var(--muted);font-size:.9rem;margin-bottom:20px">A new key will be generated. <strong style="color:var(--text)">You'll need to update the Android app with the new key.</strong></p>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn btn-ghost btn-sm" onclick="hideRegenModal()">Cancel</button>
+              <form method="POST" action="/settings/regen-key" style="display:inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-red btn-sm" type="submit">Yes, Regenerate</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section">
+        <h3>
+          <img src="/static/calendar.png" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px" alt="">
+          Folder Date Format
+        </h3>
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:4px">Sets the subfolder name used when files sync. Today: <strong id="dateSample" style="color:var(--accent2)"></strong></p>
+        <form method="POST" action="/settings/dateformat" id="datefmtForm" onsubmit="return checkUploadBeforeSubmit()" style="margin-top:14px">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.9rem">
+              <input type="radio" name="date_format" value="dmy" <%= dateFmt === 'dmy' ? 'checked' : '' %> onchange="updateSample('dmy')">
+              <span>DD.MM.YYYY <span style="color:var(--muted);font-size:.8rem">(e.g. 24.03.2025)</span></span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.9rem">
+              <input type="radio" name="date_format" value="mdy" <%= dateFmt === 'mdy' ? 'checked' : '' %> onchange="updateSample('mdy')">
+              <span>MM.DD.YYYY <span style="color:var(--muted);font-size:.8rem">(e.g. 03.24.2025)</span></span>
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+      </div>
+
+      <% } else { %>
+      <div class="card section">
+        <h3>Local Network URL</h3>
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px">Direct LAN or Static IP address for large file uploads — bypasses Cloudflare's 100 MB limit.</p>
+        <form method="POST" action="/settings/local-url">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-group" style="margin-bottom:12px">
+            <input type="url" name="local_url" value="<%= localUrl || '' %>" placeholder="e.g. http://192.168.1.100:8080" autocomplete="off" spellcheck="false">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" type="submit">Save</button>
+            <% if (localUrl) { %>
+              <button class="btn btn-ghost btn-sm" type="submit" name="clear_url" value="1">Clear</button>
+            <% } %>
+          </div>
+        </form>
+        <% if (localUrl) { %>
+          <p style="color:var(--muted);font-size:.8rem;margin-top:10px">App tries LAN/Static IP first, falls back to tunnel if unreachable.</p>
+        <% } %>
+      </div>
+
+      <div class="card section">
+        <h3>Upload Size Limit</h3>
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px">Maximum file size allowed per upload.</p>
+        <form method="POST" action="/settings/upload-limit">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-group" style="margin-bottom:12px">
+            <select name="upload_max_gb">
+              <% [0,1,2,3,4,5,6,7,8,9,10,20,30,40,50,100].forEach(function(gb) {
+                const bytes = gb * 1024 * 1024 * 1024;
+                const sel = uploadMaxBytes === (gb === 0 ? '' : String(bytes));
+              %>
+                <option value="<%= gb %>"<%= sel ? ' selected' : '' %>><%= gb === 0 ? 'Unlimited' : gb + ' GB' %></option>
+              <% }) %>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" type="submit">Save</button>
+        </form>
+      </div>
+      <% } %>
+
+    </div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script nonce="<%= nonce %>">
+<%- include('partials/_scripts') %>
+function copyKey(){
+    const el=document.getElementById('kv');
+    const v=el?(el.value||el.textContent||'').trim():'';
+    if(!v){toast('No API key to copy');return;}
+    navigator.clipboard.writeText(v).then(()=>toast('✓ API key copied!')).catch(()=>toast('Could not copy'));
+}
+function showRegenModal(){const m=document.getElementById('regenModal');m.style.display='flex';m.onclick=e=>{if(e.target===m)hideRegenModal()};}
+function hideRegenModal(){document.getElementById('regenModal').style.display='none';}
+function updateSample(fmt){
+    const el=document.getElementById('dateSample');if(!el)return;
+    const now=new Date(),dd=String(now.getDate()).padStart(2,'0'),mm=String(now.getMonth()+1).padStart(2,'0'),yyyy=String(now.getFullYear());
+    el.textContent=fmt==='mdy'?mm+'.'+dd+'.'+yyyy:dd+'.'+mm+'.'+yyyy;
+}
+updateSample('<%= dateFmt %>');
+document.querySelectorAll('input[name="date_format"]').forEach(r=>r.addEventListener('change',function(){updateSample(this.value);}));
+function checkUploadBeforeSubmit(){
+    try{
+        const xhr=new XMLHttpRequest();xhr.open('GET','/web/upload-status',false);xhr.send();
+        if(xhr.status===200){
+            const s=JSON.parse(xhr.responseText);
+            if(s.active>0){alert('An upload is in progress — please wait.');return false;}
+            if((Date.now()-s.lastUploadAt)/1000<15)return confirm('An upload just finished. Changing the format will rename today\'s folder. Continue?');
+        }
+    }catch(e){}
+    return true;
+}
+</script>
+</body>
+</html>

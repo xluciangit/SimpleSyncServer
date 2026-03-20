@@ -1,0 +1,18 @@
+function toast(m){const el=document.getElementById('toast');el.textContent=m;el.className='show';clearTimeout(el._t);el._t=setTimeout(()=>el.className='',3200)}
+function toggleTheme(){
+    const cur=document.documentElement.getAttribute('data-theme');
+    const next=cur==='light'?'dark':'light';
+    document.documentElement.setAttribute('data-theme',next);
+    fetch('/settings/theme',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'theme='+next+'&_csrf=<%- csrfToken %>'});
+    setTimeout(()=>location.reload(),150);
+}
+function tog(n){
+    const el=document.getElementById('fb-'+n);
+    if(el) el.classList.toggle('open');
+}
+document.addEventListener('click',function(e){
+    const hdr=e.target.closest('.folder-hdr[data-folder]');
+    if(hdr) tog(hdr.dataset.folder);
+    const rem=e.target.closest('[data-remove]');
+    if(rem) showRemoveFolderModal(decodeURIComponent(rem.dataset.remove));
+});

@@ -1,0 +1,36 @@
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/favicon.ico" style="width:34px;height:34px;object-fit:contain;border-radius:8px" alt="">
+  </div>
+
+  <% if (!isAdmin) { %>
+  <a href="/" class="nav-btn<%= active === 'dash' ? ' active' : '' %>" title="Dashboard">
+    <img src="/static/dashboard.png" style="width:22px;height:22px;object-fit:contain" alt="">
+  </a>
+  <% } else { %>
+  <a href="/users" class="nav-btn<%= active === 'users' ? ' active' : '' %>" title="Users">
+    <img src="/static/dashboard.png" style="width:22px;height:22px;object-fit:contain" alt="">
+  </a>
+  <% } %>
+
+  <a href="/settings" class="nav-btn<%= active === 'settings' ? ' active' : '' %>" title="Settings">
+    <img src="/static/settings.png" style="width:22px;height:22px;object-fit:contain" alt="">
+  </a>
+
+  <div class="nav-spacer"></div>
+
+  <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+    <% if (theme === 'light') { %>
+      <img src="/static/blue_moon.png" style="width:20px;height:20px;object-fit:contain" alt="">
+    <% } else { %>
+      <img src="/static/blue_sun.png" style="width:20px;height:20px;object-fit:contain" alt="">
+    <% } %>
+  </button>
+
+  <form method="POST" action="/logout" style="display:contents">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button class="nav-btn" type="submit" title="Sign out" style="margin-top:4px">
+      <img src="/static/user_logout.png" style="width:22px;height:22px;object-fit:contain" alt="">
+    </button>
+  </form>
+</nav>

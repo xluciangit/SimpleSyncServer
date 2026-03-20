@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="<%= theme %>">
+<head>
+  <title>User Management – SimpleSync Server</title>
+  <%- include('partials/_head') %>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/_nav', { active: 'users', isAdmin: true }) %>
+
+  <div class="content-col">
+    <div class="page-hdr">
+      <span class="page-title">User Management</span>
+      <div class="hdr-meta">
+        <span class="badge">v<%= VERSION %></span>
+        <% if (uptime) { %>
+          <span class="badge">
+            <img src="/static/stopwatch.png" style="width:13px;height:13px;object-fit:contain;vertical-align:middle;margin-right:3px" alt="">
+            <%= uptime %>
+          </span>
+        <% } %>
+        <span class="badge" style="color:var(--accent)">Admin</span>
+      </div>
+    </div>
+
+    <div class="content-panel">
+    <div class="wrap" style="max-width:860px">
+      <% if (error) { %><div class="err"><%= error %></div><% } %>
+      <% if (success) { %><div class="ok">✓ <%= success %></div><% } %>
+
+      <div class="grid2" style="margin-bottom:28px">
+        <div class="card section">
+          <h3>Create New User</h3>
+          <form method="POST" action="/users/create">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="form-group"><label>Username</label>
+              <input type="text" name="username" placeholder="e.g. alice" maxlength="63" required autocomplete="off"></div>
+            <div class="form-group"><label>Password</label>
+              <input type="password" name="password" required autocomplete="new-password"></div>
+            <div class="form-group"><label>Confirm Password</label>
+              <input type="password" name="confirm_password" required autocomplete="new-password"></div>
+            <button class="btn btn-primary btn-sm" type="submit">Create User</button>
+          </form>
+        </div>
+        <div class="card section">
+          <h3>About Users</h3>
+          <p style="color:var(--muted);font-size:.85rem;line-height:1.6">
+            Each user gets their own isolated API key, sync folders, and file storage.<br><br>
+            Usernames <strong style="color:var(--text)">cannot be changed</strong> after creation.<br><br>
+            The <strong style="color:var(--text)">admin</strong> account manages users only — it cannot upload or sync files.<br><br>
+            Users log in at <code style="color:var(--accent2)">/login</code> and use their API key in the companion app.
+          </p>
+        </div>
+      </div>
+
+      <div class="section-title">All Users (<%= users.length %>)</div>
+      <% users.forEach(function(u) {
+        const uIsAdmin = u.is_admin === 1;
+        const created = u.created_at ? u.created_at.split(' ')[0] : '—';
+      %>
+      <div class="folder-item" style="margin-bottom:10px">
+        <div style="padding:12px 16px;background:var(--surface)">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <img src="/static/user.png" style="width:16px;height:16px;object-fit:contain;vertical-align:middle" alt="">
+            <span style="font-weight:600;flex:1;min-width:0"><%= u.username %></span>
+            <% if (uIsAdmin) { %><span class="badge" style="color:var(--accent)">Admin</span><% } %>
+            <span style="color:var(--muted);font-size:.8rem">Created <%= created %></span>
+          </div>
+          <% if (!uIsAdmin) { %>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="showPwModal(<%= u.id %>,'<%= u.username %>')">Change Password</button>
+            <button class="btn btn-red btn-sm" onclick="showDelModal(<%= u.id %>,'<%= u.username %>')">Delete</button>
+          </div>
+          <% } %>
+        </div>
+      </div>
+      <% }) %>
+
+      <div class="section-title">Database Integrity Check</div>
+      <div class="card section" style="margin-bottom:28px">
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px">Scans all user file records and removes entries where the file no longer exists on disk.</p>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="showIntegrityModal('all')">Run Integrity Check (All Users)</button>
+      </div>
+
+      <div class="section-title">Recent Security Events (last 100)</div>
+      <% if (secEvents.length === 0) { %>
+        <p style="color:var(--muted);font-size:.85rem;padding:10px 0 20px">No security events recorded yet.</p>
+      <% } else { %>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:28px">
+          <div style="overflow-y:auto;max-height:205px;-webkit-overflow-scrolling:touch">
+          <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+            <thead><tr style="background:var(--surface2);position:sticky;top:0;z-index:1">
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600">Time</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600">IP</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600">Location</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600">Event</th>
+            </tr></thead>
+            <tbody>
+            <% secEvents.forEach(function(e) { %>
+            <tr style="border-top:1px solid var(--border)">
+              <td style="padding:7px 12px;color:var(--muted);white-space:nowrap"><%= e.created_at.split('.')[0] %></td>
+              <td style="padding:7px 12px;font-family:monospace;color:var(--text)"><%= e.ip %></td>
+              <td style="padding:7px 12px;color:var(--muted);white-space:nowrap"><%= e.country ? (e.city ? e.city + ', ' : '') + e.country : '—' %></td>
+              <td style="padding:7px 12px;color:var(--text)"><%= e.event %></td>
+            </tr>
+            <% }) %>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="section-title">Blocked IPs (<%= blocked.length %>)</div>
+      <% if (blocked.length === 0) { %>
+        <p style="color:var(--muted);font-size:.85rem;padding:10px 0 20px">No IPs are currently blocked.</p>
+      <% } else { %>
+        <% blocked.forEach(function(b) { %>
+        <div class="folder-item" style="margin-bottom:10px">
+          <div class="folder-hdr" style="cursor:default">
+            <span style="color:var(--red);font-size:.85rem">✕</span>
+            <span style="font-weight:600;font-family:monospace;flex:1"><%= b.ip %></span>
+            <% if (b.country) { %>
+              <span style="color:var(--muted);font-size:.8rem;margin-right:12px"><%= b.city || '—' %>, <%= b.country %></span>
+            <% } %>
+            <span style="color:var(--muted);font-size:.8rem;margin-right:12px">Blocked <%= b.blocked_at.split(' ')[0] %></span>
+            <form method="POST" action="/users/unblock" style="display:inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="ip" value="<%= b.ip %>">
+              <button class="btn btn-ghost btn-sm" type="submit" onclick="return confirm('Unblock <%= b.ip %>?')">Unblock</button>
+            </form>
+          </div>
+        </div>
+        <% }) %>
+      <% } %>
+
+    </div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<div id="delModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Delete User: <span id="delName" style="color:var(--accent)"></span></div>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px">The user account will be removed and they will no longer be able to log in or use the API.</p>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
+      <p style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:10px">What else should be deleted?</p>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:10px">
+        <input type="checkbox" id="chkDb" name="delete_db" value="on" style="margin-top:2px;accent-color:var(--accent)">
+        <span>
+          <span style="font-size:.88rem;color:var(--text);font-weight:600">Database records</span><br>
+          <span style="font-size:.78rem;color:var(--muted)">Removes all folder configs and upload history. Files on disk are kept.</span>
+        </span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+        <input type="checkbox" id="chkFiles" name="delete_files" value="on" style="margin-top:2px;accent-color:var(--red)">
+        <span>
+          <span style="font-size:.88rem;color:var(--red);font-weight:600">Files on disk</span><br>
+          <span style="font-size:.78rem;color:var(--muted)">Permanently deletes all uploaded files. Also deletes database records.</span>
+        </span>
+      </label>
+    </div>
+    <div id="delWarn" style="display:none;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.35);border-radius:8px;padding:10px 14px;font-size:.82rem;color:var(--red);margin-bottom:14px">
+      <img src="/static/alert.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px" alt=""> This cannot be undone.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="hideDelModal()">Cancel</button>
+      <form id="delForm" method="POST" action="/users/delete" style="display:inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" id="delUserId" name="user_id" value="">
+        <input type="hidden" id="hdnDb" name="delete_db" value="">
+        <input type="hidden" id="hdnFiles" name="delete_files" value="">
+        <button class="btn btn-red btn-sm" type="submit">Delete User</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="pwModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Change Password for <span id="pwName" style="color:var(--accent)"></span></div>
+    <div id="pwError" class="err" style="display:none;margin-bottom:12px"></div>
+    <div class="form-group"><label>New Password</label>
+      <input type="password" id="pwInput" autocomplete="new-password"></div>
+    <div class="form-group"><label>Confirm Password</label>
+      <input type="password" id="pwConfirm" autocomplete="new-password"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="hidePwModal()">Cancel</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="submitPwChange()">Update Password</button>
+    </div>
+  </div>
+</div>
+
+<div id="integrityModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Run Integrity Check</div>
+    <p id="integrityModalDesc" style="color:var(--muted);font-size:.88rem;margin-bottom:16px"></p>
+    <div style="background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:10px 14px;font-size:.82rem;color:var(--red);margin-bottom:20px">
+      <img src="/static/alert.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px" alt=""> DB entries for missing files will be permanently removed.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="hideIntegrityModal()">Cancel</button>
+      <form id="integrityForm" method="POST" style="display:inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary btn-sm" type="submit">Run</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script nonce="<%= nonce %>">
+<%- include('partials/_scripts') %>
+function showDelModal(id,name){
+    document.getElementById('delUserId').value=id;
+    document.getElementById('delName').textContent=name;
+    document.getElementById('chkDb').checked=false;
+    document.getElementById('chkFiles').checked=false;
+    document.getElementById('hdnDb').value='';
+    document.getElementById('hdnFiles').value='';
+    document.getElementById('delWarn').style.display='none';
+    const m=document.getElementById('delModal');m.style.display='flex';m.onclick=e=>{if(e.target===m)hideDelModal()};
+}
+function hideDelModal(){document.getElementById('delModal').style.display='none'}
+document.addEventListener('DOMContentLoaded',function(){
+    const chkDb=document.getElementById('chkDb'),chkFiles=document.getElementById('chkFiles'),w=document.getElementById('delWarn');
+    function upd(){
+        if(w) w.style.display=(chkDb&&chkDb.checked)||(chkFiles&&chkFiles.checked)?'block':'none';
+        if(document.getElementById('hdnDb')) document.getElementById('hdnDb').value=chkDb&&chkDb.checked?'on':'';
+        if(document.getElementById('hdnFiles')) document.getElementById('hdnFiles').value=chkFiles&&chkFiles.checked?'on':'';
+    }
+    if(chkFiles)chkFiles.addEventListener('change',function(){if(this.checked&&chkDb)chkDb.checked=true;upd();});
+    if(chkDb)chkDb.addEventListener('change',function(){if(!this.checked&&chkFiles)chkFiles.checked=false;upd();});
+});
+function showPwModal(id,name){
+    document.getElementById('pwName').textContent=name;
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwConfirm').value='';
+    document.getElementById('pwError').style.display='none';
+    document.getElementById('pwError').textContent='';
+    const m=document.getElementById('pwModal');
+    m.dataset.userId=id;
+    m.style.display='flex';
+    m.onclick=e=>{if(e.target===m)hidePwModal()};
+    setTimeout(()=>document.getElementById('pwInput').focus(),50);
+}
+function hidePwModal(){document.getElementById('pwModal').style.display='none'}
+async function submitPwChange(){
+    const m=document.getElementById('pwModal');
+    const userId=m.dataset.userId;
+    const newPw=document.getElementById('pwInput').value;
+    const confirmPw=document.getElementById('pwConfirm').value;
+    const errEl=document.getElementById('pwError');
+
+    const body=new URLSearchParams({
+        _csrf:'<%- csrfToken %>',
+        user_id:userId,
+        new_password:newPw,
+        confirm_password:confirmPw
+    });
+
+    try {
+        const r=await fetch('/users/change-password',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+        const data=await r.json();
+        if(data.ok){
+            hidePwModal();
+            toast('✓ '+data.success);
+        } else {
+            errEl.textContent=data.error;
+            errEl.style.display='block';
+        }
+    } catch(e) {
+        errEl.textContent='Request failed. Please try again.';
+        errEl.style.display='block';
+    }
+}
+function showIntegrityModal(scope){
+    const m=document.getElementById('integrityModal');
+    const all=scope==='all';
+    document.getElementById('integrityModalDesc').textContent=all
+        ?'Scans all user file records and removes entries where the file no longer exists on disk.'
+        :'Scans your file records and removes entries where the file no longer exists on disk.';
+    document.getElementById('integrityForm').action=all?'/users/integrity-check':'/settings/integrity-check';
+    m.style.display='flex';m.onclick=e=>{if(e.target===m)hideIntegrityModal()};
+}
+function hideIntegrityModal(){document.getElementById('integrityModal').style.display='none'}
+</script>
+</body>
+</html>
