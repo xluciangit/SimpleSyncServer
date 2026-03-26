@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="<%= theme %>">
+<head>
+  <title>SimpleSync Server</title>
+  <%- include('partials/_head') %>
+</head>
+<body>
+<div class="app">
+  <%- include('partials/_nav', { active: 'dash', isAdmin: false }) %>
+
+  <div class="content-col">
+    <div class="page-hdr">
+      <span class="page-title">Dashboard</span>
+      <div class="hdr-meta">
+        <span class="badge">v<%= VERSION %></span>
+        <span class="badge">
+          <img src="/static/stopwatch.png" style="width:13px;height:13px;object-fit:contain;vertical-align:middle;margin-right:3px" alt="">
+          <%= uptime %>
+        </span>
+        <span><%= username %></span>
+      </div>
+    </div>
+
+    <div class="content-panel">
+    <div class="wrap">
+      <div class="stats-row">
+        <div class="stat"><div class="val"><%= folders.length %></div><div class="lbl">Configured Folders</div></div>
+        <div class="stat"><div class="val"><%= totalFiles.toLocaleString() %></div><div class="lbl">Files in DB</div></div>
+        <div class="stat"><div class="val"><%= totalBytes %></div><div class="lbl">Total Size</div></div>
+        <div class="stat"><div class="val"><%= diskFree %></div><div class="lbl">Free Disk</div></div>
+        <div class="stat"><div class="val" style="font-size:1rem"><%= diskUsed %> / <%= diskTotal %></div><div class="lbl">Disk Used / Total</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <h2>API Key</h2>
+        <% if (apiKey) { %>
+          <div class="warn" style="margin-bottom:12px">Enter this key in SimpleSync Companion to authorise uploads.</div>
+          <div class="key-row">
+            <span style="font-family:monospace;font-size:.83rem;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              Configured ••••••••••••••••••••••••<%= apiKey.slice(-8) %>
+            </span>
+          </div>
+          <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px">To copy the full key go to Settings → Regenerate Key.</p>
+        <% } else { %>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:10px">No key yet — go to Settings → Regenerate Key.</p>
+        <% } %>
+        <a href="/settings" class="btn btn-ghost btn-sm">Manage in Settings →</a>
+      </div>
+
+      <% if (flashMsg) { %>
+        <div class="ok" style="margin-bottom:14px">✓ <%= flashMsg %></div>
+      <% } %>
+      <% if (folderError) { %>
+        <div class="err" style="margin-bottom:12px"><%= folderError %></div>
+      <% } %>
+
+      <div class="section-title">Sync Folders</div>
+      <div id="folders-list">
+        <% if (folders.length === 0) { %>
+          <p style="color:var(--muted);padding:12px 0">No folders yet. Add one below.</p>
+        <% } else { %>
+          <% folders.forEach(function(f) {
+            const stats = f.stats || [];
+            const tFiles = stats.reduce((a, s) => a + s.count, 0);
+            const tBytes = stats.reduce((a, s) => a + s.totalBytes, 0);
+          %>
+          <div class="folder-item">
+            <div class="folder-hdr" data-folder="<%= encodeURIComponent(f.name) %>">
+              <img src="/static/folder.png" style="width:18px;height:18px;object-fit:contain" alt="">
+              <span style="font-weight:600;flex:1"><%= f.name %></span>
+              <span style="color:var(--muted);font-size:.82rem"><%= tFiles %> files · <%= fmtBytes(tBytes) %></span>
+              <span style="color:var(--muted);margin-left:8px;font-size:.8rem">▾</span>
+            </div>
+            <div class="folder-body" id="fb-<%= encodeURIComponent(f.name) %>">
+              <% if (stats.length === 0) { %>
+                <p style="color:var(--muted);font-size:.85rem">No uploads yet</p>
+              <% } else { %>
+                <% stats.forEach(function(s) { %>
+                <div class="date-row">
+                  <span class="date-tag"><%= s.date %></span>
+                  <span style="color:var(--muted);flex:1"><%= s.count %> file<%= s.count !== 1 ? 's' : '' %></span>
+                  <span style="color:var(--accent2)"><%= fmtBytes(s.totalBytes) %></span>
+                </div>
+                <% }) %>
+              <% } %>
+              <div style="margin-top:12px">
+                <button class="btn btn-red btn-sm" data-remove="<%= encodeURIComponent(f.name) %>">Remove</button>
+              </div>
+            </div>
+          </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <% if (waFiles > 0) { %>
+      <div class="section-title">WhatsApp Backup</div>
+      <div class="card" style="margin-bottom:20px">
+        <div class="stats-row" style="margin-bottom:0">
+          <div class="stat"><div class="val"><%= waFiles.toLocaleString() %></div><div class="lbl">Backed Up Files</div></div>
+          <div class="stat"><div class="val"><%= waBytes %></div><div class="lbl">Backup Size</div></div>
+          <div class="stat"><div class="val" style="font-size:.85rem"><%= waLastBackup ? waLastBackup.split('.')[0].replace('T',' ') : '—' %></div><div class="lbl">Last Backup</div></div>
+        </div>
+      </div>
+      <% } %>
+
+      <div class="section-title">Integrity Check</div>
+      <div class="card" style="margin-bottom:28px">
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px">Scans file records and removes entries where the file no longer exists on disk.</p>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="showIntegrityModal('user')">Run Integrity Check</button>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<div id="removeFolderModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Remove: <span id="removeFolderName" style="color:var(--accent)"></span></div>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px">All records for this folder will be removed from the database.</p>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+        <input type="checkbox" id="removeFolderFilesChk" style="margin-top:3px;accent-color:var(--red)" onchange="onRemoveFolderChkChange(this)">
+        <span>
+          <span style="font-size:.88rem;font-weight:600;color:var(--red)">Also delete all files on disk</span><br>
+          <span style="font-size:.78rem;color:var(--muted)">Permanently deletes the folder and all its contents. Cannot be undone.</span>
+        </span>
+      </label>
+    </div>
+    <div id="removeFolderWarn" style="display:none;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:10px 14px;font-size:.82rem;color:var(--red);margin-bottom:16px">
+      <img src="/static/alert.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px" alt=""> All files in this folder will be permanently deleted from disk.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="hideRemoveFolderModal()">Cancel</button>
+      <form id="removeFolderForm" method="POST" action="/web/folders/remove" style="display:inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" id="removeFolderNameInput" name="name" value="">
+        <input type="checkbox" id="removeFolderFilesHidden" name="delete_files" value="on" style="display:none">
+        <button class="btn btn-red btn-sm" type="submit">Confirm Remove</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="integrityModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Run Integrity Check</div>
+    <p id="integrityModalDesc" style="color:var(--muted);font-size:.88rem;margin-bottom:16px"></p>
+    <div style="background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:10px 14px;font-size:.82rem;color:var(--red);margin-bottom:20px">
+      <img src="/static/alert.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px" alt=""> DB entries for missing files will be permanently removed.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="hideIntegrityModal()">Cancel</button>
+      <form id="integrityForm" method="POST" style="display:inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary btn-sm" type="submit">Run</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script nonce="<%= nonce %>">
+<%- include('partials/_scripts') %>
+function showRemoveFolderModal(name){
+    document.getElementById('removeFolderNameInput').value=name;
+    document.getElementById('removeFolderName').textContent=name;
+    document.getElementById('removeFolderFilesChk').checked=false;
+    document.getElementById('removeFolderFilesHidden').checked=false;
+    document.getElementById('removeFolderWarn').style.display='none';
+    const m=document.getElementById('removeFolderModal');
+    m.style.display='flex';m.onclick=e=>{if(e.target===m)hideRemoveFolderModal()};
+}
+function hideRemoveFolderModal(){document.getElementById('removeFolderModal').style.display='none'}
+function onRemoveFolderChkChange(chk){
+    document.getElementById('removeFolderFilesHidden').checked=chk.checked;
+    document.getElementById('removeFolderWarn').style.display=chk.checked?'block':'none';
+}
+function showIntegrityModal(scope){
+    const m=document.getElementById('integrityModal');
+    const all=scope==='all';
+    document.getElementById('integrityModalDesc').textContent=all
+        ?'Scans all user file records and removes entries where the file no longer exists on disk.'
+        :'Scans your file records and removes entries where the file no longer exists on disk.';
+    document.getElementById('integrityForm').action=all?'/users/integrity-check':'/settings/integrity-check';
+    m.style.display='flex';m.onclick=e=>{if(e.target===m)hideIntegrityModal()};
+}
+function hideIntegrityModal(){document.getElementById('integrityModal').style.display='none'}
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="<%= theme %>">
+<head>
+  <title>Login – SimpleSync Server</title>
+  <%- include('partials/_head') %>
+  <style>
+    body{display:flex;align-items:center;justify-content:center;background:var(--bg)}
+    .login-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:36px 32px;width:100%;max-width:400px}
+    .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+    .login-logo span{font-size:1.2rem;font-weight:700;color:var(--text)}
+    .login-sub{color:var(--muted);font-size:.85rem;margin-bottom:28px}
+  </style>
+</head>
+<body>
+<div class="login-card">
+  <div class="login-logo">
+    <img src="/static/favicon.ico" style="width:34px;height:34px;object-fit:contain;border-radius:8px" alt="">
+    <span>SimpleSync Server</span>
+  </div>
+  <p class="login-sub">Sign in to manage your sync server</p>
+
+  <% if (error) { %>
+    <div class="err"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/login">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" name="username" autofocus autocomplete="username" required>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" type="submit">Sign In</button>
+  </form>
+</div>
+</body>
+</html>
